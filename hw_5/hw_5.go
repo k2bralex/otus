@@ -26,7 +26,6 @@ func FuncPool(pool []func() error, n, maxErr int) {
 				err := someFunc()
 				errChan <- err
 			}()
-			close(errChan)
 		}
 		close(funcChan)
 	}()
