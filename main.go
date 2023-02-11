@@ -1,39 +1,26 @@
 package main
 
-import (
-
-	/*
-		"Otus/hw_1"
-		"Otus/hw_2"
-		"Otus/hw_3"
-
-	*/
-
-	"Otus/hw_4"
-	"fmt"
-)
-
 func main() {
 
-	//HM_4
-	list := hw_4.DoublyLinkedList{}
-	for i := 0; i < 100; i += 15 {
-		list.PushBack(i)
-	}
-
-	for ptr := list.GetHead(); ptr != nil; ptr = ptr.GetNext() {
-		fmt.Println(ptr.GetData())
-	}
-
-	for i := -100; i < 0; i += 15 {
-		list.PushFront(i)
-	}
-
-	for ptr := list.GetHead(); ptr != nil; ptr = ptr.GetNext() {
-		fmt.Println(ptr.GetData())
-	}
-
 	/*
+
+		//HM_4
+		list := hw_4.DoublyLinkedList{}
+		for i := 0; i < 100; i += 15 {
+			list.PushBack(i)
+		}
+
+		for ptr := list.GetHead(); ptr != nil; ptr = ptr.GetNext() {
+			fmt.Println(ptr.GetData())
+		}
+
+		for i := -100; i < 0; i += 15 {
+			list.PushFront(i)
+		}
+
+		for ptr := list.GetHead(); ptr != nil; ptr = ptr.GetNext() {
+			fmt.Println(ptr.GetData())
+		}
 
 		//HM_3
 
