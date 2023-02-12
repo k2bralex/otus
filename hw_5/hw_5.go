@@ -15,20 +15,25 @@ import (
 
 func FuncPool(pool []func() error, n, maxErr int) {
 	errCount := 0
-	funcChan := make(chan func() error, n)
 	errChan := make(chan error, n)
+	funcChan := make(chan func() error, n)
 
-	go func() {
+	go func(c *int) {
 		for _, f := range pool {
-			funcChan <- f
-			go func() {
-				someFunc := <-funcChan
-				err := someFunc()
+			if *c >= maxErr {
+				return
+			}
+			go func(c *int, fn func() error) {
+				if *c >= maxErr {
+					close(errChan)
+					return
+				}
+				err := fn()
 				errChan <- err
-			}()
+			}(&errCount, f)
 		}
 		close(funcChan)
-	}()
+	}(&errCount)
 
 	for err := range errChan {
 		if errCount >= maxErr {
@@ -39,31 +44,3 @@ func FuncPool(pool []func() error, n, maxErr int) {
 		log.Println(err)
 	}
 }
-
-/*func FuncPool(pool []func() error, errCount, maxErr int) {
-	var mu sync.Mutex
-	for _, f := range pool {
-		if maxErr >= errCount {
-			break
-		}
-		f := f
-		go func(errCount int) {
-			err := f()
-			if err != nil {
-				mu.Lock()
-				errCount++
-				mu.Lock()
-				return
-			}
-		}(errCount)
-	}
-}
-
-func withError() error {
-	return fmt.Errorf("some error")
-}
-
-func noError() {
-	time.Sleep(10 * time.Second)
-	fmt.Println("done")
-}*/
