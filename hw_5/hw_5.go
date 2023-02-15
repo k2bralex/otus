@@ -23,14 +23,16 @@ func FuncPool(pool []func() error, n, maxErr int) {
 			if *c >= maxErr {
 				return
 			}
-			go func(c *int, fn func() error) {
+			go func(c *int) {
 				if *c >= maxErr {
 					close(errChan)
 					return
 				}
+				fn := <-funcChan
 				err := fn()
 				errChan <- err
-			}(&errCount, f)
+			}(&errCount)
+			funcChan <- f
 		}
 		close(funcChan)
 	}(&errCount)
