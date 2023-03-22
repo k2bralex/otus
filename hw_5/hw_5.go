@@ -1,8 +1,10 @@
-package hw_5
+package main
 
 import (
+	"context"
 	"fmt"
-	"log"
+	"sync"
+	"time"
 )
 
 /*
@@ -13,36 +15,102 @@ import (
 - максимальное число ошибок после которого нужно приостановить обработку.
 */
 
-func FuncPool(pool []func() error, n, maxErr int) {
-	errCount := 0
-	errChan := make(chan error, n)
-	funcChan := make(chan func() error, n)
+type Task struct {
+	Message string
+}
 
-	go func(c *int) {
-		for _, f := range pool {
-			if *c >= maxErr {
+func (t *Task) ErrorResponse() {
+	//time.Sleep(200 * time.Millisecond)
+	t.Message = "Stopped"
+}
+
+func (t *Task) NoErrorResponse() {
+	//time.Sleep(300 * time.Millisecond)
+	t.Message = "Done"
+}
+
+func main() {
+	taskPoll := []Task{
+		{}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {},
+		{}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {},
+		{}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {},
+		{}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {},
+		{}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {},
+		{}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {},
+		{}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {},
+		{}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {},
+		{}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {},
+	}
+
+	TaskRun(&taskPoll, 5, 3)
+}
+
+func TaskRun(p *[]Task, ng, me int) {
+	in := make(chan *Task)
+	out := make(chan *Task)
+
+	var (
+		ctx, cancel = context.WithCancel(context.Background())
+		wg          = &sync.WaitGroup{}
+		mu          = &sync.Mutex{}
+		errCount    = 0
+	)
+	defer cancel()
+
+	for i := 0; i <= ng; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			worker(ctx, in, out, &errCount, mu)
+		}()
+	}
+
+	go func() {
+		defer close(in)
+		for _, task := range *p {
+			if errCount == me {
+				cancel()
+			}
+			in <- &task
+		}
+	}()
+
+	go func() {
+		wg.Wait()
+		close(out)
+	}()
+
+	for task := range out {
+		fmt.Println(task.Message)
+	}
+
+	fmt.Println(errCount)
+
+}
+
+func worker(ctx context.Context, in, out chan *Task, err *int, m *sync.Mutex) {
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case task, ok := <-in:
+			if !ok {
 				return
 			}
-			go func(c *int) {
-				if *c >= maxErr {
-					close(errChan)
-					return
-				}
-				fn := <-funcChan
-				err := fn()
-				errChan <- err
-			}(&errCount)
-			funcChan <- f
+			time.Sleep(100 * time.Millisecond)
+			out <- responseHandler(task, err, m)
 		}
-		close(funcChan)
-	}(&errCount)
-
-	for err := range errChan {
-		if errCount >= maxErr {
-			fmt.Println("error limit")
-			return
-		}
-		errCount++
-		log.Println(err)
 	}
+}
+
+func responseHandler(task *Task, err *int, m *sync.Mutex) *Task {
+	if time.Now().Unix()%2 == 0 {
+		task.NoErrorResponse()
+	} else {
+		task.ErrorResponse()
+		m.Lock()
+		*err++
+		m.Unlock()
+	}
+	return task
 }
