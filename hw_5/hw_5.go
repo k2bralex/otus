@@ -16,17 +16,21 @@ import (
 */
 
 type Task struct {
-	Message string
+	Message  string
+	Response error
 }
 
 func (t *Task) ErrorResponse() {
 	//time.Sleep(200 * time.Millisecond)
 	t.Message = "Stopped"
+	t.Response = fmt.Errorf("some error")
+
 }
 
 func (t *Task) NoErrorResponse() {
 	//time.Sleep(300 * time.Millisecond)
 	t.Message = "Done"
+	t.Response = nil
 }
 
 func main() {
@@ -42,12 +46,12 @@ func main() {
 		{}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {},
 	}
 
-	TaskRun(&taskPoll, 5, 3)
+	TaskRun(&taskPoll, 5, 10)
 }
 
-func TaskRun(p *[]Task, ng, me int) {
-	in := make(chan *Task)
-	out := make(chan *Task)
+func TaskRun(p *[]Task, gNum, maxErr int) {
+	in := make(chan *Task, gNum)
+	out := make(chan *Task, gNum)
 
 	var (
 		ctx, cancel = context.WithCancel(context.Background())
@@ -55,9 +59,10 @@ func TaskRun(p *[]Task, ng, me int) {
 		mu          = &sync.Mutex{}
 		errCount    = 0
 	)
+
 	defer cancel()
 
-	for i := 0; i <= ng; i++ {
+	for i := 0; i < gNum; i++ {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
@@ -65,15 +70,16 @@ func TaskRun(p *[]Task, ng, me int) {
 		}()
 	}
 
-	go func() {
+	go func(err *int) {
 		defer close(in)
 		for _, task := range *p {
-			if errCount == me {
+			time.Sleep(100 * time.Millisecond)
+			if *err >= maxErr {
 				cancel()
 			}
 			in <- &task
 		}
-	}()
+	}(&errCount)
 
 	go func() {
 		wg.Wait()
@@ -83,7 +89,6 @@ func TaskRun(p *[]Task, ng, me int) {
 	for task := range out {
 		fmt.Println(task.Message)
 	}
-
 	fmt.Println(errCount)
 
 }
@@ -97,20 +102,20 @@ func worker(ctx context.Context, in, out chan *Task, err *int, m *sync.Mutex) {
 			if !ok {
 				return
 			}
-			time.Sleep(100 * time.Millisecond)
 			out <- responseHandler(task, err, m)
 		}
 	}
 }
 
 func responseHandler(task *Task, err *int, m *sync.Mutex) *Task {
+	time.Sleep(100 * time.Millisecond)
 	if time.Now().Unix()%2 == 0 {
 		task.NoErrorResponse()
 	} else {
-		task.ErrorResponse()
 		m.Lock()
 		*err++
 		m.Unlock()
+		task.ErrorResponse()
 	}
 	return task
 }
