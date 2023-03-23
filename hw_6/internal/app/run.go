@@ -40,25 +40,26 @@ func Run(src, trg *string, lim, off *int64) error {
 		}
 	}
 
+	bar := pb.StartNew(int(*lim))
+	defer bar.Finish()
+
 	for *off < *lim {
 		read, err := fileFrom.Read(buf)
 		*off += int64(read)
 		if err != nil && err == io.EOF {
 			return err
 		}
+
+		bar.Add(read)
+
 		if read == 0 {
 			break
 		}
+
 		if _, err = fileTo.Write(buf[:read]); err != nil {
 			return err
 		}
 	}
-
-	go func() {
-		bar := pb.StartNew(100)
-		defer bar.Finish()
-
-	}()
 
 	return nil
 }
