@@ -1,6 +1,7 @@
 package app
 
 import (
+	"fmt"
 	"github.com/cheggaaa/pb"
 	"io"
 	"os"
@@ -12,6 +13,11 @@ func Run(src, trg *string, lim, off *int64) error {
 		return err
 	}
 	defer fileFrom.Close()
+
+	_, err = os.Stat(*trg)
+	if err == nil {
+		return fmt.Errorf("file exist already")
+	}
 
 	fileTo, err := os.OpenFile(*trg, os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
@@ -43,7 +49,7 @@ func Run(src, trg *string, lim, off *int64) error {
 		if read == 0 {
 			break
 		}
-		if _, err = fileTo.Write(buf); err != nil {
+		if _, err = fileTo.Write(buf[:read]); err != nil {
 			return err
 		}
 	}
