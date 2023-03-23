@@ -13,7 +13,7 @@ func Run(src, trg *string, lim, off *int64) error {
 	}
 	defer fileFrom.Close()
 
-	fileTo, err := os.OpenFile(*trg, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	fileTo, err := os.OpenFile(*trg, os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		return err
 	}
@@ -27,10 +27,20 @@ func Run(src, trg *string, lim, off *int64) error {
 
 	buf := make([]byte, *lim)
 
+	if *off != 0 {
+		_, err = fileFrom.Seek(*off, io.SeekStart)
+		if err != nil {
+			return err
+		}
+	}
+
 	for *off < *lim {
-		read, err := fileFrom.Read(buf[*off:])
+		read, err := fileFrom.Read(buf)
 		*off += int64(read)
-		if err == io.EOF {
+		if err != nil && err == io.EOF {
+			return err
+		}
+		if read == 0 {
 			break
 		}
 		if _, err = fileTo.Write(buf); err != nil {
