@@ -14,8 +14,7 @@ func Run(src, trg *string, lim, off *int64) error {
 	}
 	defer fileFrom.Close()
 
-	_, err = os.Stat(*trg)
-	if err == nil {
+	if _, err = os.Stat(*trg); err == nil {
 		return fmt.Errorf("file exist already")
 	}
 
@@ -34,8 +33,7 @@ func Run(src, trg *string, lim, off *int64) error {
 	buf := make([]byte, *lim)
 
 	if *off != 0 {
-		_, err = fileFrom.Seek(*off, io.SeekStart)
-		if err != nil {
+		if _, err = fileFrom.Seek(*off, io.SeekStart); err != nil {
 			return err
 		}
 	}
