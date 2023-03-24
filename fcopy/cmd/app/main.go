@@ -1,7 +1,7 @@
 package main
 
 import (
-	. "Otus/hw_6/internal/app"
+	. "Otus/fcopy/internal/app"
 	"flag"
 	"fmt"
 )
