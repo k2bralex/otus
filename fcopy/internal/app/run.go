@@ -1,7 +1,7 @@
 package app
 
 import (
-	"fmt"
+	"errors"
 	"github.com/cheggaaa/pb"
 	"io"
 	"os"
@@ -15,7 +15,7 @@ func Run(src, trg *string, lim, off *int64) error {
 	defer fileFrom.Close()
 
 	if _, err = os.Stat(*trg); err == nil {
-		return fmt.Errorf("file exist already")
+		return errors.New("file exist already")
 	}
 
 	fileTo, err := os.OpenFile(*trg, os.O_CREATE|os.O_WRONLY, 0644)
